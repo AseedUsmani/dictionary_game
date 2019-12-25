@@ -1,0 +1,19 @@
+{
+  "name": "dictionary_game",
+  "version": "1.0.0",
+  "description": "Dictionary game",
+  "main": "dict",
+  "scripts": {
+    "test": "./dict play"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AseedUsmani/dictionary_game.git"
+  },
+  "author": "Aseed Usmani",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AseedUsmani/dictionary_game/issues"
+  },
+  "homepage": "https://github.com/AseedUsmani/dictionary_game#readme"
+}

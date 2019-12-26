@@ -20,11 +20,21 @@ LINE = '__________________________________________________'
 
 
 function getEndpoint(endpoint, word) {
+	/*
+	To populate word in the endpoint
+	@param {endpoint}: Endpoint
+	@param {word}: Word
+	*/
 	return endpoint.replace('{word}', word);
 }
 
 
 function parseSentences(data) {
+	/*
+	To extract all the sentences (it may be examples or definitions) by the API.
+	@param {JSON} data: JSON data returned by the endpoint.
+	@return {array} sentences: list of sentences
+	*/
 	var sentences = []
 	data.forEach(function(sentence) {
 		sentences = sentences.concat([sentence['text']]);
@@ -35,6 +45,10 @@ function parseSentences(data) {
 
 
 function parseDefinitions(data) {
+	/*
+	Print all the definitions returned by the API.
+	@param {JSON} data: JSON data returned by the endpoint.
+	*/
 	console.log('Definitions: \n');
 	var defns = parseSentences(data);
 	defns.forEach(function(text) {
@@ -44,6 +58,10 @@ function parseDefinitions(data) {
 
 
 function parseExamples(data) {
+	/*
+	Print all the examples returned by the API.
+	@param {JSON} data: JSON data returned by the endpoint.
+	*/
 	console.log('Examples: \n')
 	var exs = parseSentences(data['examples']);
 	exs.forEach(function(text) {
@@ -53,6 +71,11 @@ function parseExamples(data) {
 
 
 function parseWords(data, relationship) {
+	/*
+	To extract all the words returned by the API of the given relationship.
+	@param {JSON} data: JSON data returned by the endpoint.
+	@return {array} words: List of words of the given relationship.
+	*/
 	var words = []
 	data.forEach(function(obj) {
 		if(obj['relationshipType'] == relationship) {
@@ -65,6 +88,10 @@ function parseWords(data, relationship) {
 
 
 function parseSynonyms(data) {
+	/*
+	To print all the synonyms returned by the API
+	@param {JSON} data: JSON data returned by the endpoint.
+	*/
 	var synonyms = parseWords(data, 'synonym');
 
 	if(synonyms.length > 0) {
@@ -74,6 +101,10 @@ function parseSynonyms(data) {
 
 
 function parseAntonyms(data) {
+	/*
+	To print all the antonyms returned by the API
+	@param {JSON} data: JSON data returned by the endpoint.
+	*/
 	var antonyms = parseWords(data, 'antonym')
 
 	if(antonyms.length > 0) {
@@ -83,6 +114,10 @@ function parseAntonyms(data) {
 
 
 function parseRandom(data) {
+	/*
+	To continue to app when no args where passed, hence random word is chosen.
+	@param {JSON} data: JSON data returned by the endpoint.
+	*/
 	var word = data['word'];
 
 	console.log('Word: ', word);
@@ -111,7 +146,14 @@ function parseRandom(data) {
 
 
 function startGame(word, synonyms, antonyms, definitions) {
-	console.log('Game On!', word);
+	/*
+	To start the game
+	@param {String} word: Random word that got chosen by the API.
+	@param {array} synonyms: All the synonyms of the random word.
+	@param {array} antonym: All the antonyms of the random word.
+	@param {array} definitions: All the deinitions of the random word.
+	*/
+	console.log('Game On!');
 	console.log('\nDefinition: ', definitions.pop() || 'No definition found');
 	console.log('Synonyms: ', synonyms.pop() || 'No synonyms found');
 	console.log('Antonym:', antonyms.pop() || 'No antonyms found.');
@@ -144,14 +186,17 @@ function startGame(word, synonyms, antonyms, definitions) {
 }
 
 
-function parsePlay(data, endpoint) {
+function parsePlay(data) {
+	/*
+	To continue to app when selected option was 'play'
+	@param {JSON} data: JSON data returned by the endpoint.
+	*/
 	var word = data['word'];
 	var synonyms = [];
 	var antonyms = [];
-	var examples = [];
 	var definitions = [];
 
-	var state = 0; // to check if we have got all values
+	var state = 0; // to check if we have got 
 
 	// Show definition
 	request.get(URL + getEndpoint(DEFINITION_ENDPOINT, word) + '?api_key=' + API_KEY , function(request, response) {
@@ -171,6 +216,11 @@ function parsePlay(data, endpoint) {
 
 
 function parseOutput(data, endpoint) {
+	/*
+	Control function for the output after getting data from a request
+	@param {JSON} data: JSON data returned by the endpoint.
+	@param {String} endpoint: Endpoint used to send request.
+	*/
 	switch(endpoint) {
 		case RANDOM_ENDPOINT: parseRandom(data); break;
 		case EXAMPLES_ENDPOINT: parseExamples(data); break;
@@ -202,7 +252,7 @@ function sendReq(endpoint, word) {
 	});
 }
 
-
+// Code starts working from here
 var args = process.argv.slice(2);
 switch(args[0]) {
 	case undefined:

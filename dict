@@ -5,7 +5,7 @@ const request = require('request');
 API_KEY = 'b972c7ca44dda72a5b482052b1f5e13470e01477f3fb97c85d5313b3c112627073481104fec2fb1a0cc9d84c2212474c0cbe7d8e59d7b95c7cb32a1133f778abd1857bf934ba06647fda4f59e878d164'
 URL = 'https://fourtytwowords.herokuapp.com/'
 
-PLAY_ENDPOINT = 'words/randomWord'
+PLAY_ENDPOINT = 'play'
 RANDOM_ENDPOINT = 'words/randomWord'
 DEFINITION_ENDPOINT = 'word/{word}/definitions'
 RELATED_WORDS_ENDPOINT = 'word/{word}/relatedWords'
@@ -22,21 +22,48 @@ function getEndpoint(endpoint, word) {
 }
 
 
+function parseSentences(data) {
+	var sentences = []
+	data.forEach(function(sentence) {
+		sentences = sentences.concat([sentence['text']]);
+	}); 
+
+	return sentences;
+}
+
+
 function parseDefinitions(data) {
-	console.log('Definitions: \n')
-	data.forEach(function(text) {
-		console.log(text['text']);
+	console.log('Definitions: \n');
+	var defns = parseSentences(data);
+	defns.forEach(function(text) {
+		console.log(text, '\n');
 	});
 }
 
 
-function parseSynonyms(data) {
-	var synonyms = []
+function parseExamples(data) {
+	console.log('Examples: \n')
+	var exs = parseSentences(data['examples']);
+	exs.forEach(function(text) {
+		console.log(text, '\n');
+	});
+}
+
+
+function parseWords(data, relationship) {
+	var words = []
 	data.forEach(function(obj) {
-		if(obj['relationshipType'] == 'synonym') {
-			synonyms = synonyms.concat(obj['words']);
+		if(obj['relationshipType'] == relationship) {
+			words = words.concat(obj['words']);
 		}
 	});
+	return words
+}
+
+
+
+function parseSynonyms(data) {
+	var synonyms = parseWords(data, 'synonym');
 
 	if(synonyms.length > 0) {
 		console.log('Synonyms: ', synonyms.join(', '));
@@ -45,24 +72,11 @@ function parseSynonyms(data) {
 
 
 function parseAntonyms(data) {
-	var antonyms = []
-	data.forEach(function(obj) {
-		if(obj['relationshipType'] == 'antonym') {
-			antonyms = antonyms.concat(obj['words']);
-		}
-	});
+	var antonyms = parseWords(data, 'antonym')
 
 	if(antonyms.length > 0) {
 		console.log('Antonyms: ', antonyms.join(', '));
 	} else console.log('No antonyms found.')
-}
-
-
-function parseExamples(data) {
-	console.log('Examples:')
-	data['examples'].forEach(function(example) {
-		console.log(example['text']);
-	}); 
 }
 
 
@@ -91,7 +105,48 @@ function parseRandom(data) {
 		parseExamples(JSON.parse(response.body));
 		console.log(LINE);
 	});
+}
 
+
+function startGame(word, synonyms, antonyms, examples, definitions) {
+	console.log('Game On!', word);
+	console.log('Antonyms:', antonyms.length);
+	console.log('Synonyms:', synonyms.length);
+	console.log(examples.length);
+	console.log(definitions.length);
+}
+
+
+function parsePlay(data, endpoint) {
+	var word = data['word'];
+	var synonyms = [];
+	var antonyms = [];
+	var examples = [];
+	var definitions = [];
+
+	var state = 0; // to check if we have got all values
+
+	// Show definition
+	request.get(URL + getEndpoint(DEFINITION_ENDPOINT, word) + '?api_key=' + API_KEY , function(request, response) {
+		definitions =parseSentences(JSON.parse(response.body));
+		state++;
+		if(state == 3) startGame(word, synonyms, antonyms, examples, definitions);
+	});
+
+	// Show synonyms and antonyms
+	request.get(URL + getEndpoint(RELATED_WORDS_ENDPOINT, word) + '?api_key=' + API_KEY , function(request, response) {
+		antonyms = parseWords(JSON.parse(response.body), 'antonym');
+		synonyms = parseWords(JSON.parse(response.body), 'synonym');
+		state++;
+		if(state == 3) startGame(word, synonyms, antonyms, examples, definitions);
+	});
+
+	// Show examples
+	request.get(URL + getEndpoint(EXAMPLES_ENDPOINT, word) + '?api_key=' + API_KEY , function(request, response) {
+		examples = parseSentences(JSON.parse(response.body)['examples']);
+		state++;
+		if(state == 3) startGame(word, synonyms, antonyms, examples, definitions);
+	});
 }
 
 
@@ -115,6 +170,7 @@ function sendReq(endpoint, word) {
 	*/
 	ept = endpoint;
 	if(ept == SYNONYM_ENDPOINT || ept == ANTONYM_ENDPOINT) ept = RELATED_WORDS_ENDPOINT;
+	else if(ept == PLAY_ENDPOINT) ept = RANDOM_ENDPOINT;
 
 	var url = URL + ept + '?api_key=' + API_KEY;
 	if(word != null) {
@@ -145,7 +201,7 @@ switch(args[0]) {
 		sendReq(EXAMPLES_ENDPOINT, args[1]);
 		break;
 	case 'play':
-		console.log('Feature yet to be implemented. Please try later.');
+		sendReq(PLAY_ENDPOINT, null)
 		break;
 	default:
 		console.log("Invalid argument.");

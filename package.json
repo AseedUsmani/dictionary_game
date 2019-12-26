@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/AseedUsmani/dictionary_game/issues"
   },
-  "homepage": "https://github.com/AseedUsmani/dictionary_game#readme"
+  "homepage": "https://github.com/AseedUsmani/dictionary_game#readme",
+  "dependencies": {
+    "request": "^2.88.0"
+  }
 }

@@ -1,23 +1,151 @@
 #!/usr/bin/env node
+
 const request = require('request');
 
 API_KEY = 'b972c7ca44dda72a5b482052b1f5e13470e01477f3fb97c85d5313b3c112627073481104fec2fb1a0cc9d84c2212474c0cbe7d8e59d7b95c7cb32a1133f778abd1857bf934ba06647fda4f59e878d164'
 URL = 'https://fourtytwowords.herokuapp.com/'
+
 PLAY_ENDPOINT = 'words/randomWord'
+RANDOM_ENDPOINT = 'words/randomWord'
+DEFINITION_ENDPOINT = 'word/{word}/definitions'
+RELATED_WORDS_ENDPOINT = 'word/{word}/relatedWords'
+EXAMPLES_ENDPOINT = 'word/{word}/examples'
+ANTONYM_ENDPOINT = 'ant'
+SYNONYM_ENDPOINT = 'syn'
 
-var args = process.argv.slice(2);
+LINE = '__________________________________________________'
 
-function sendReq(endpoint, words) {
-	url = URL + endpoint + '?api_key=' + API_KEY;
-	request.get(url, function(request, response) {
-		// console.log(response.body);
+
+
+function getEndpoint(endpoint, word) {
+	return endpoint.replace('{word}', word);
+}
+
+
+function parseDefinitions(data) {
+	console.log('Definitions: \n')
+	data.forEach(function(text) {
+		console.log(text['text']);
 	});
 }
 
+
+function parseSynonyms(data) {
+	var synonyms = []
+	data.forEach(function(obj) {
+		if(obj['relationshipType'] == 'synonym') {
+			synonyms = synonyms.concat(obj['words']);
+		}
+	});
+
+	if(synonyms.length > 0) {
+		console.log('Synonyms: ', synonyms.join(', '));
+	} else console.log('No synonyms found.')
+}
+
+
+function parseAntonyms(data) {
+	var antonyms = []
+	data.forEach(function(obj) {
+		if(obj['relationshipType'] == 'antonym') {
+			antonyms = antonyms.concat(obj['words']);
+		}
+	});
+
+	if(antonyms.length > 0) {
+		console.log('Antonyms: ', antonyms.join(', '));
+	} else console.log('No antonyms found.')
+}
+
+
+function parseExamples(data) {
+	console.log('Examples:')
+	data['examples'].forEach(function(example) {
+		console.log(example['text']);
+	}); 
+}
+
+
+function parseRandom(data) {
+	var word = data['word'];
+
+	console.log('Word: ', word);
+	console.log(LINE);
+
+	// Show definition
+	request.get(URL + getEndpoint(DEFINITION_ENDPOINT, word) + '?api_key=' + API_KEY , function(request, response) {
+		parseDefinitions(JSON.parse(response.body));
+		console.log(LINE);
+	});
+
+	// Show synonyms and antonyms
+	request.get(URL + getEndpoint(RELATED_WORDS_ENDPOINT, word) + '?api_key=' + API_KEY , function(request, response) {
+		parseAntonyms(JSON.parse(response.body));
+		console.log(LINE);
+		parseSynonyms(JSON.parse(response.body));
+		console.log(LINE);
+	});
+
+	// Show examples
+	request.get(URL + getEndpoint(EXAMPLES_ENDPOINT, word) + '?api_key=' + API_KEY , function(request, response) {
+		parseExamples(JSON.parse(response.body));
+		console.log(LINE);
+	});
+
+}
+
+
+function parseOutput(data, endpoint) {
+	switch(endpoint) {
+		case RANDOM_ENDPOINT: parseRandom(data); break;
+		case EXAMPLES_ENDPOINT: parseExamples(data); break;
+		case DEFINITION_ENDPOINT: parseDefinitions(data); break;
+		case ANTONYM_ENDPOINT: parseAntonyms(data); break;
+		case SYNONYM_ENDPOINT: parseSynonyms(data); break;
+		case PLAY_ENDPOINT: parsePlay(data); break;
+	}
+}
+
+
+function sendReq(endpoint, word) {
+	/*
+	Prepare and send a get request to the URL
+	@param {String} endpoint: Endpoint to send get request to.
+	@param {Word} word: Word to add as URL param
+	*/
+	ept = endpoint;
+	if(ept == SYNONYM_ENDPOINT || ept == ANTONYM_ENDPOINT) ept = RELATED_WORDS_ENDPOINT;
+
+	var url = URL + ept + '?api_key=' + API_KEY;
+	if(word != null) {
+		url = getEndpoint(url, word);
+	}
+
+	request.get(url, function(request, response) {
+		parseOutput(JSON.parse(response.body), endpoint)
+	});
+}
+
+
+var args = process.argv.slice(2);
 switch(args[0]) {
+	case undefined:
+		sendReq(RANDOM_ENDPOINT, null);
+		break;
+	case 'syn':
+		sendReq(SYNONYM_ENDPOINT, args[1]);
+		break
+	case 'ant':
+		sendReq(ANTONYM_ENDPOINT, args[1]);
+		break;
+	case 'defn':
+		sendReq(DEFINITION_ENDPOINT, args[1]);
+		break;
+	case 'ex':
+		sendReq(EXAMPLES_ENDPOINT, args[1]);
+		break;
 	case 'play':
-		console.log("Game under development. Please try later");
-		sendReq(PLAY_ENDPOINT, null);
+		console.log('Feature yet to be implemented. Please try later.');
 		break;
 	default:
 		console.log("Invalid argument.");

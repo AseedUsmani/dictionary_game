@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 const request = require('request');
+const readline_sync = require('readline-sync');
+const shuffle = require('shuffle-words');
 
 API_KEY = 'b972c7ca44dda72a5b482052b1f5e13470e01477f3fb97c85d5313b3c112627073481104fec2fb1a0cc9d84c2212474c0cbe7d8e59d7b95c7cb32a1133f778abd1857bf934ba06647fda4f59e878d164'
 URL = 'https://fourtytwowords.herokuapp.com/'
@@ -108,12 +110,37 @@ function parseRandom(data) {
 }
 
 
-function startGame(word, synonyms, antonyms, examples, definitions) {
+function startGame(word, synonyms, antonyms, definitions) {
 	console.log('Game On!', word);
-	console.log('Antonyms:', antonyms.length);
-	console.log('Synonyms:', synonyms.length);
-	console.log(examples.length);
-	console.log(definitions.length);
+	console.log('\nDefinition: ', definitions.pop() || 'No definition found');
+	console.log('Synonyms: ', synonyms.pop() || 'No synonyms found');
+	console.log('Antonym:', antonyms.pop() || 'No antonyms found.');
+	console.log('\n');
+
+	while(true) {
+		var answer = readline_sync.question('Enter your answer: ');
+		if(answer == word || synonyms.includes(answer)) {
+			console.log('Correct answer');
+			break;
+		} else {
+			console.log('\nIncorrect answer; please choose an option to continue...');
+			console.log('1: Try again.');
+			console.log('2: Take a hint.');
+			console.log('3: Quit.');
+			var option = readline_sync.question('Choose an option: ');
+
+			if(option == '1') {
+				continue;
+			} else if(option == '2') {
+				console.log('\nDefinition: ', definitions.pop() || 'No definition found');
+				console.log('Synonyms: ', synonyms.pop() || 'No synonyms found');
+				console.log('Antonym: ', antonyms.pop() || 'No antonyms found.');
+				console.log('Jumbled: ', shuffle(word, true));
+			} else if(option == '3') {
+				break;
+			}
+		}
+	}
 }
 
 
@@ -130,7 +157,7 @@ function parsePlay(data, endpoint) {
 	request.get(URL + getEndpoint(DEFINITION_ENDPOINT, word) + '?api_key=' + API_KEY , function(request, response) {
 		definitions =parseSentences(JSON.parse(response.body));
 		state++;
-		if(state == 3) startGame(word, synonyms, antonyms, examples, definitions);
+		if(state == 2) startGame(word, synonyms, antonyms, examples, definitions);
 	});
 
 	// Show synonyms and antonyms
@@ -138,14 +165,7 @@ function parsePlay(data, endpoint) {
 		antonyms = parseWords(JSON.parse(response.body), 'antonym');
 		synonyms = parseWords(JSON.parse(response.body), 'synonym');
 		state++;
-		if(state == 3) startGame(word, synonyms, antonyms, examples, definitions);
-	});
-
-	// Show examples
-	request.get(URL + getEndpoint(EXAMPLES_ENDPOINT, word) + '?api_key=' + API_KEY , function(request, response) {
-		examples = parseSentences(JSON.parse(response.body)['examples']);
-		state++;
-		if(state == 3) startGame(word, synonyms, antonyms, examples, definitions);
+		if(state == 2) startGame(word, synonyms, antonyms, examples, definitions);
 	});
 }
 

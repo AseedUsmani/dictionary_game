@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/AseedUsmani/dictionary_game#readme",
   "dependencies": {
-    "request": "^2.88.0"
+    "readline-sync": "^1.4.10",
+    "request": "^2.88.0",
+    "shuffle-words": "^0.1.2"
   }
 }
